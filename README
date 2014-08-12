@@ -1,0 +1,16 @@
+RVutils
+=======
+
+This is (or will become) a random collection of small bits of C, perl,
+python that I've written and found useful on more than one occasion.
+
+
+tailq_sort
+==========
+
+If you use the macros from <sys/queue.h> instead of writing your own
+linked list implementation a few times each month, you may at some
+point have wanted a routine for sorting the list. Well, I did, so I
+wrote tailq_sort.{c,h}. It uses VLA-in-struct (see the commit message
+for the rationale), but it is easy enough to rip out the code and
+adapt it for a specific type.
