@@ -25,8 +25,6 @@ depssuffix = deps
 
 all: $(OBJ) $(PROG)
 
-quickstat: LINKFLAGS += -lm -lgsl -lgslcblas
-
 test: $(TESTPROG)
 	@for x in $(TESTPROG) ; do \
 		./$$x < /dev/null ; \
@@ -35,13 +33,15 @@ test: $(TESTPROG)
 $(depsdir):
 	mkdir -p $@
 
-
-tailq_sort_test: tailq_sort.o
-tailq_sort_test: LINKFLAGS += -lm
-
 %.o: %.c | $(depsdir)
 	$(CC) $(CFLAGS) -fPIC -MMD -MF $(depsdir)/$*.$(depssuffix) -c -o $@ $<
 
 %: %.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LINKFLAGS)
+
+
+quickstat: LINKFLAGS += -lm -lgsl -lgslcblas
+
+tailq_sort_test: tailq_sort.o
+tailq_sort_test: LINKFLAGS += -lm
 
