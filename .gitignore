@@ -1,4 +1,5 @@
 deps.d
 *.o
+*.so
 tailq_sort_test
 quickstat

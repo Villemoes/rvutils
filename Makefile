@@ -10,7 +10,7 @@ LINKFLAGS=
 
 CFLAGS = -g -pthread -O2 -std=gnu99 -D_GNU_SOURCE $(WARNINGFLAGS) $(INCLUDEFLAGS)
 
-OBJ = tailq_sort.o
+OBJ = tailq_sort.o open_noatime.so
 PROG = quickstat
 
 TESTPROG = tailq_sort_test
@@ -33,12 +33,16 @@ test: $(TESTPROG)
 $(depsdir):
 	mkdir -p $@
 
+%.so: %.c | $(depsdir)
+	$(CC) $(CFLAGS) -shared -fPIC -MMD -MF $(depsdir)/$*.$(depssuffix) -o $@ $< $(LINKFLAGS)
+
 %.o: %.c | $(depsdir)
 	$(CC) $(CFLAGS) -fPIC -MMD -MF $(depsdir)/$*.$(depssuffix) -c -o $@ $<
 
 %: %.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LINKFLAGS)
 
+open_noatime.so: LINKFLAGS += -ldl
 
 quickstat: LINKFLAGS += -lm -lgsl -lgslcblas
 
