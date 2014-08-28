@@ -11,6 +11,7 @@ LINKFLAGS=
 CFLAGS = -g -pthread -O2 -std=gnu99 -D_GNU_SOURCE $(WARNINGFLAGS) $(INCLUDEFLAGS)
 
 OBJ = tailq_sort.o
+PROG = quickstat
 
 TESTPROG = tailq_sort_test
 
@@ -22,7 +23,9 @@ depssuffix = deps
 
 .PHONY: all test
 
-all: $(OBJ)
+all: $(OBJ) $(PROG)
+
+quickstat: LINKFLAGS += -lm -lgsl -lgslcblas
 
 test: $(TESTPROG)
 	@for x in $(TESTPROG) ; do \
