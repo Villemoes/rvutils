@@ -14,3 +14,19 @@ point have wanted a routine for sorting the list. Well, I did, so I
 wrote tailq_sort.{c,h}. It uses VLA-in-struct (see the commit message
 for the rationale), but it is easy enough to rip out the code and
 adapt it for a specific type.
+
+quickstat
+=========
+
+I've often written some a long shell pipeline to extract or compute
+numbers from some data, only to find myself needing a way to summarize
+these numbers. Sometimes I needed their sum, sometimes their average,
+and sometimes I simply wanted to get a feeling for how they are
+distributed. Also, I was tired of writing 
+
+  ...  | awk '{x += $1} END {print x}'
+
+just to get their sum. So I wrote quickstat, which computes some of
+the most common statistics, and which can also produce simple
+histograms of the data.
+
