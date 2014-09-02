@@ -290,9 +290,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 	u.ptr = key;
 	if ((u.i & 0x3) == 0) {
 		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
-#ifdef VALGRIND
-		const uint8_t  *k8;
-#endif
 
 		/* ---- all but last block: aligned reads and affect 32 bits of (a,b,c) */
 		while (length > 12) {
@@ -314,8 +311,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 		 * still catch it and complain.  The masking trick does make the hash
 		 * noticably faster for short strings (like English words).
 		 */
-#ifndef VALGRIND
-
 		switch(length) {
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
 		case 11: c += k[2] & MASK3; b += k[1]; a += k[0]; break;
@@ -331,27 +326,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 		case  1: a += k[0] & MASK1; break;
 		case  0: return c;              /* zero length strings require no mixing */
 		}
-
-#else /* make valgrind happy */
-
-		k8 = (const uint8_t *)k;
-		switch(length) {
-		case 12: c += k[2]; b += k[1]; a += k[0]; break;
-		case 11: c += ((uint32_t)k8[10])<<16;  /* fall through */
-		case 10: c += ((uint32_t)k8[9])<<8;    /* fall through */
-		case  9: c += k8[8];                   /* fall through */
-		case  8: b += k[1]; a += k[0]; break;
-		case  7: b += ((uint32_t)k8[6])<<16;   /* fall through */
-		case  6: b += ((uint32_t)k8[5])<<8;    /* fall through */
-		case  5: b += k8[4];                   /* fall through */
-		case  4: a += k[0]; break;
-		case  3: a += ((uint32_t)k8[2])<<16;   /* fall through */
-		case  2: a += ((uint32_t)k8[1])<<8;    /* fall through */
-		case  1: a += k8[0]; break;
-		case  0: return c;
-		}
-
-#endif /* !valgrind */
 	} else if ((u.i & 0x1) == 0) {
 		const uint16_t *k = (const uint16_t *)key;         /* read 16-bit chunks */
 		const uint8_t  *k8;
@@ -473,9 +447,6 @@ void jenkins_hash2(
 	u.ptr = key;
 	if ((u.i & 0x3) == 0) {
 		const uint32_t *k = (const uint32_t *)key;
-#ifdef VALGRIND
-		const uint8_t  *k8;
-#endif
 
 		while (length > 12) {
 			a += k[0];
@@ -485,8 +456,6 @@ void jenkins_hash2(
 			length -= 12;
 			k += 3;
 		}
-
-#ifndef VALGRIND
 
 		switch(length) {
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
@@ -503,28 +472,6 @@ void jenkins_hash2(
 		case  1: a += k[0] & MASK1; break;
 		case  0: *pc=c; *pb=b; return;
 		}
-
-#else
-
-		k8 = (const uint8_t *)k;
-		switch(length) {
-		case 12: c += k[2]; b += k[1]; a += k[0]; break;
-		case 11: c += ((uint32_t)k8[10])<<16;  /* fall through */
-		case 10: c += ((uint32_t)k8[9])<<8;    /* fall through */
-		case  9: c += k8[8];                   /* fall through */
-		case  8: b += k[1]; a += k[0]; break;
-		case  7: b += ((uint32_t)k8[6])<<16;   /* fall through */
-		case  6: b += ((uint32_t)k8[5])<<8;    /* fall through */
-		case  5: b += k8[4];                   /* fall through */
-		case  4: a += k[0]; break;
-		case  3: a += ((uint32_t)k8[2])<<16;   /* fall through */
-		case  2: a += ((uint32_t)k8[1])<<8;    /* fall through */
-		case  1: a += k8[0]; break;
-		case  0: *pc=c; *pb=b; return;
-		}
-
-#endif
-
 	} else if ((u.i & 0x1) == 0) {
 		const uint16_t *k = (const uint16_t *)key;         
 		const uint8_t  *k8;
@@ -627,9 +574,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 	u.ptr = key;
 	if ((u.i & 0x3) == 0) {
 		const uint32_t *k = (const uint32_t *)key;
-#ifdef VALGRIND
-		const uint8_t  *k8;
-#endif
 
 		while (length > 12) {
 			a += k[0];
@@ -639,8 +583,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 			length -= 12;
 			k += 3;
 		}
-
-#ifndef VALGRIND
 
 		switch(length) {
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
@@ -657,28 +599,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 		case  1: a += k[0] & MASK1; break;
 		case  0: return c;
 		}
-
-#else
-
-		k8 = (const uint8_t *)k;
-		switch(length)
-		{
-		case 12: c += k[2]; b += k[1]; a += k[0]; break;
-		case 11: c += ((uint32_t)k8[10])<<8;  /* fall through */
-		case 10: c += ((uint32_t)k8[9])<<16;  /* fall through */
-		case  9: c += ((uint32_t)k8[8])<<24;  /* fall through */
-		case  8: b += k[1]; a += k[0]; break;
-		case  7: b += ((uint32_t)k8[6])<<8;   /* fall through */
-		case  6: b += ((uint32_t)k8[5])<<16;  /* fall through */
-		case  5: b += ((uint32_t)k8[4])<<24;  /* fall through */
-		case  4: a += k[0]; break;
-		case  3: a += ((uint32_t)k8[2])<<8;   /* fall through */
-		case  2: a += ((uint32_t)k8[1])<<16;  /* fall through */
-		case  1: a += ((uint32_t)k8[0])<<24; break;
-		case  0: return c;
-		}
-
-#endif
 	} else {
 		const uint8_t *k = (const uint8_t *)key;
 
@@ -738,9 +658,6 @@ uint32_t jenkins_hash2(
 	u.ptr = key;
 	if ((u.i & 0x3) == 0) {
 		const uint32_t *k = (const uint32_t *)key;
-#ifdef VALGRIND
-		const uint8_t  *k8;
-#endif
 
 		while (length > 12) {
 			a += k[0];
@@ -750,8 +667,6 @@ uint32_t jenkins_hash2(
 			length -= 12;
 			k += 3;
 		}
-
-#ifndef VALGRIND
 
 		switch(length) {
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
@@ -768,27 +683,6 @@ uint32_t jenkins_hash2(
 		case  1: a += k[0] & MASK1; break;
 		case  0: *pc=c; *pb=b; return;
 		}
-
-#else
-		k8 = (const uint8_t *)k;
-		switch(length)
-		{
-		case 12: c += k[2]; b += k[1]; a += k[0]; break;
-		case 11: c += ((uint32_t)k8[10])<<8;  /* fall through */
-		case 10: c += ((uint32_t)k8[9])<<16;  /* fall through */
-		case  9: c += ((uint32_t)k8[8])<<24;  /* fall through */
-		case  8: b += k[1]; a += k[0]; break;
-		case  7: b += ((uint32_t)k8[6])<<8;   /* fall through */
-		case  6: b += ((uint32_t)k8[5])<<16;  /* fall through */
-		case  5: b += ((uint32_t)k8[4])<<24;  /* fall through */
-		case  4: a += k[0]; break;
-		case  3: a += ((uint32_t)k8[2])<<8;   /* fall through */
-		case  2: a += ((uint32_t)k8[1])<<16;  /* fall through */
-		case  1: a += ((uint32_t)k8[0])<<24; break;
-		case  0: *pc=c; *pb=b; return;
-		}
-
-#endif /* !VALGRIND */
 	} else {
 		const uint8_t *k = (const uint8_t *)key;
 
