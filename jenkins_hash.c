@@ -167,11 +167,10 @@
   -- that the key be an array of uint32_t's, and
   -- that the length be the number of uint32_t's in the key
 
-  The function hashword() is identical to hashlittle() on little-endian
-  machines, and identical to hashbig() on big-endian machines,
-  except that the length has to be measured in uint32_ts rather than in
-  bytes.  hashlittle() is more complicated than hashword() only because
-  hashlittle() has to dance around fitting the key bytes into registers.
+  The function hashword() is identical to hash(), except that the
+  length has to be measured in uint32_ts rather than in bytes.  hash()
+  is more complicated than hashword() only because hash() has to dance
+  around fitting the key bytes into registers.
   --------------------------------------------------------------------
 */
 uint32_t jenkins_hashword(
@@ -307,7 +306,7 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 
 		/* ---- handle the last (probably partial) block */
 		/* 
-		 * "k[2]&0xffffff" actually reads beyond the end of the string, but
+		 * "k[2] & MASK3" actually reads beyond the end of the string, but
 		 * then masks off the part it's not allowed to read.  Because the
 		 * string is aligned, the masked-off tail is in the same word as the
 		 * rest of the string.  Every machine with memory protection I've seen
@@ -464,8 +463,8 @@ void jenkins_hash2(
 	uint32_t   *pc,        /* IN: primary initval, OUT: primary hash */
 	uint32_t   *pb)        /* IN: secondary initval, OUT: secondary hash */
 {
-	uint32_t a,b,c;                                          /* internal state */
-	union { const void *ptr; size_t i; } u;     /* needed for Mac Powerbook G4 */
+	uint32_t a,b,c;
+	union { const void *ptr; size_t i; } u;
 
 	/* Set up the internal state */
 	a = b = c = 0xdeadbeef + ((uint32_t)length) + *pc;
@@ -473,12 +472,11 @@ void jenkins_hash2(
 
 	u.ptr = key;
 	if ((u.i & 0x3) == 0) {
-		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
+		const uint32_t *k = (const uint32_t *)key;
 #ifdef VALGRIND
 		const uint8_t  *k8;
 #endif
 
-		/* ---- all but last block: aligned reads and affect 32 bits of (a,b,c) */
 		while (length > 12) {
 			a += k[0];
 			b += k[1];
@@ -488,16 +486,6 @@ void jenkins_hash2(
 			k += 3;
 		}
 
-		/* ---- handle the last (probably partial) block */
-		/* 
-		 * "k[2]&0xffffff" actually reads beyond the end of the string, but
-		 * then masks off the part it's not allowed to read.  Because the
-		 * string is aligned, the masked-off tail is in the same word as the
-		 * rest of the string.  Every machine with memory protection I've seen
-		 * does it on word boundaries, so is OK with this.  But VALGRIND will
-		 * still catch it and complain.  The masking trick does make the hash
-		 * noticably faster for short strings (like English words).
-		 */
 #ifndef VALGRIND
 
 		switch(length) {
@@ -513,10 +501,10 @@ void jenkins_hash2(
 		case  3: a += k[0] & MASK3; break;
 		case  2: a += k[0] & MASK2; break;
 		case  1: a += k[0] & MASK1; break;
-		case  0: *pc=c; *pb=b; return;  /* zero length strings require no mixing */
+		case  0: *pc=c; *pb=b; return;
 		}
 
-#else /* make valgrind happy */
+#else
 
 		k8 = (const uint8_t *)k;
 		switch(length) {
@@ -532,17 +520,15 @@ void jenkins_hash2(
 		case  3: a += ((uint32_t)k8[2])<<16;   /* fall through */
 		case  2: a += ((uint32_t)k8[1])<<8;    /* fall through */
 		case  1: a += k8[0]; break;
-		case  0: *pc=c; *pb=b; return;  /* zero length strings require no mixing */
+		case  0: *pc=c; *pb=b; return;
 		}
 
-#endif /* !valgrind */
+#endif
 
 	} else if ((u.i & 0x1) == 0) {
-		/* read 16-bit chunks */
 		const uint16_t *k = (const uint16_t *)key;         
 		const uint8_t  *k8;
 
-		/* ---- all but last block: aligned reads and different mixing */
 		while (length > 12) {
 			a += k[0] + (((uint32_t)k[1])<<16);
 			b += k[2] + (((uint32_t)k[3])<<16);
@@ -552,7 +538,6 @@ void jenkins_hash2(
 			k += 6;
 		}
 
-		/* ---- handle the last (probably partial) block */
 		k8 = (const uint8_t *)k;
 		switch(length) {
 		case 12:
@@ -584,13 +569,11 @@ void jenkins_hash2(
 			break;
 		case  1: a += k8[0];
 			break;
-		case  0: *pc=c; *pb=b; return;  /* zero length strings require no mixing */
+		case  0: *pc=c; *pb=b; return;
 		}
 	} else {
-		/* need to read the key one byte at a time */
 		const uint8_t *k = (const uint8_t *)key;
 
-		/* ---- all but the last block: affect some 32 bits of (a,b,c) */
 		while (length > 12) {
 			a += k[0];
 			a += ((uint32_t)k[1])<<8;
@@ -609,7 +592,6 @@ void jenkins_hash2(
 			k += 12;
 		}
 
-		/* ---- last block: affect all 32 bits of (c) */
 		switch(length) {                 /* all the case statements fall through */
 		case 12: c += ((uint32_t)k[11])<<24;
 		case 11: c += ((uint32_t)k[10])<<16;
@@ -624,7 +606,7 @@ void jenkins_hash2(
 		case  2: a += ((uint32_t)k[1])<<8;
 		case  1: a += k[0];
 			break;
-		case  0: *pc=c; *pb=b; return;  /* zero length strings require no mixing */
+		case  0: *pc=c; *pb=b; return;
 		}
 	}
 
@@ -638,19 +620,17 @@ void jenkins_hash2(
 uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 {
 	uint32_t a,b,c;
-	union { const void *ptr; size_t i; } u; /* to cast key to (size_t) happily */
+	union { const void *ptr; size_t i; } u;
 
-	/* Set up the internal state */
 	a = b = c = 0xdeadbeef + ((uint32_t)length) + initval;
 
 	u.ptr = key;
 	if ((u.i & 0x3) == 0) {
-		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
+		const uint32_t *k = (const uint32_t *)key;
 #ifdef VALGRIND
 		const uint8_t  *k8;
 #endif
 
-		/* ---- all but last block: aligned reads and affect 32 bits of (a,b,c) */
 		while (length > 12) {
 			a += k[0];
 			b += k[1];
@@ -660,16 +640,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 			k += 3;
 		}
 
-		/* ---- handle the last (probably partial) block */
-		/* 
-		 * "k[2]<<8" actually reads beyond the end of the string, but
-		 * then shifts out the part it's not allowed to read.  Because the
-		 * string is aligned, the illegal read is in the same word as the
-		 * rest of the string.  Every machine with memory protection I've seen
-		 * does it on word boundaries, so is OK with this.  But VALGRIND will
-		 * still catch it and complain.  The masking trick does make the hash
-		 * noticably faster for short strings (like English words).
-		 */
 #ifndef VALGRIND
 
 		switch(length) {
@@ -685,13 +655,13 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 		case  3: a += k[0] & MASK3; break;
 		case  2: a += k[0] & MASK2; break;
 		case  1: a += k[0] & MASK1; break;
-		case  0: return c;              /* zero length strings require no mixing */
+		case  0: return c;
 		}
 
-#else  /* make valgrind happy */
+#else
 
 		k8 = (const uint8_t *)k;
-		switch(length)                   /* all the case statements fall through */
+		switch(length)
 		{
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
 		case 11: c += ((uint32_t)k8[10])<<8;  /* fall through */
@@ -708,12 +678,10 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 		case  0: return c;
 		}
 
-#endif /* !VALGRIND */
-
-	} else {                        /* need to read the key one byte at a time */
+#endif
+	} else {
 		const uint8_t *k = (const uint8_t *)key;
 
-		/* ---- all but the last block: affect some 32 bits of (a,b,c) */
 		while (length > 12) {
 			a += ((uint32_t)k[0])<<24;
 			a += ((uint32_t)k[1])<<16;
@@ -732,7 +700,6 @@ uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 			k += 12;
 		}
 
-		/* ---- last block: affect all 32 bits of (c) */
 		switch(length) {                 /* all the case statements fall through */
 		case 12: c += k[11];
 		case 11: c += ((uint32_t)k[10])<<8;
@@ -762,7 +729,7 @@ uint32_t jenkins_hash2(
 	uint32_t   *pb)        /* IN: secondary initval, OUT: secondary hash */
 {
 	uint32_t a,b,c;
-	union { const void *ptr; size_t i; } u; /* to cast key to (size_t) happily */
+	union { const void *ptr; size_t i; } u;
 
 	/* Set up the internal state */
 	a = b = c = 0xdeadbeef + ((uint32_t)length) + *pc;
@@ -770,12 +737,11 @@ uint32_t jenkins_hash2(
 
 	u.ptr = key;
 	if ((u.i & 0x3) == 0) {
-		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
+		const uint32_t *k = (const uint32_t *)key;
 #ifdef VALGRIND
 		const uint8_t  *k8;
 #endif
 
-		/* ---- all but last block: aligned reads and affect 32 bits of (a,b,c) */
 		while (length > 12) {
 			a += k[0];
 			b += k[1];
@@ -785,16 +751,6 @@ uint32_t jenkins_hash2(
 			k += 3;
 		}
 
-		/* ---- handle the last (probably partial) block */
-		/* 
-		 * "k[2]<<8" actually reads beyond the end of the string, but
-		 * then shifts out the part it's not allowed to read.  Because the
-		 * string is aligned, the illegal read is in the same word as the
-		 * rest of the string.  Every machine with memory protection I've seen
-		 * does it on word boundaries, so is OK with this.  But VALGRIND will
-		 * still catch it and complain.  The masking trick does make the hash
-		 * noticably faster for short strings (like English words).
-		 */
 #ifndef VALGRIND
 
 		switch(length) {
@@ -810,13 +766,12 @@ uint32_t jenkins_hash2(
 		case  3: a += k[0] & MASK3; break;
 		case  2: a += k[0] & MASK2; break;
 		case  1: a += k[0] & MASK1; break;
-		case  0: *pc=c; *pb=b; return; /* zero length strings require no mixing */
+		case  0: *pc=c; *pb=b; return;
 		}
 
-#else  /* make valgrind happy */
-
+#else
 		k8 = (const uint8_t *)k;
-		switch(length)                   /* all the case statements fall through */
+		switch(length)
 		{
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
 		case 11: c += ((uint32_t)k8[10])<<8;  /* fall through */
@@ -834,11 +789,9 @@ uint32_t jenkins_hash2(
 		}
 
 #endif /* !VALGRIND */
-
-	} else {                        /* need to read the key one byte at a time */
+	} else {
 		const uint8_t *k = (const uint8_t *)key;
 
-		/* ---- all but the last block: affect some 32 bits of (a,b,c) */
 		while (length > 12) {
 			a += ((uint32_t)k[0])<<24;
 			a += ((uint32_t)k[1])<<16;
@@ -857,7 +810,6 @@ uint32_t jenkins_hash2(
 			k += 12;
 		}
 
-		/* ---- last block: affect all 32 bits of (c) */
 		switch(length) {                 /* all the case statements fall through */
 		case 12: c += k[11];
 		case 11: c += ((uint32_t)k[10])<<8;
