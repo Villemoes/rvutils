@@ -40,10 +40,8 @@
 #endif /* SELF_TEST */
 
 #include <stdint.h>     /* defines uint32_t etc */
-#include <sys/param.h>  /* attempt to define endianness */
-#ifdef linux
-# include <endian.h>    /* attempt to define endianness */
-#endif
+#include <sys/param.h>
+#include <endian.h>     /* attempt to define endianness */
 
 #include "jenkins_hash.h"
 
@@ -51,20 +49,16 @@
  * My best guess at if you are big-endian or little-endian.  This may
  * need adjustment.
  */
-#if (defined(__BYTE_ORDER) && defined(__LITTLE_ENDIAN) &&		\
-     __BYTE_ORDER == __LITTLE_ENDIAN) ||				\
-	(defined(i386) || defined(__i386__) || defined(__i486__) ||	\
-	 defined(__i586__) || defined(__i686__) || defined(vax) || defined(MIPSEL))
+#if (defined(__BYTE_ORDER) && defined(__LITTLE_ENDIAN) && __BYTE_ORDER == __LITTLE_ENDIAN) \
+	|| (defined(BYTE_ORDER) && defined(LITTLE_ENDIAN) && BYTE_ORDER == LITTLE_ENDIAN)
 # define HASH_LITTLE_ENDIAN 1
 # define HASH_BIG_ENDIAN 0
-#elif (defined(__BYTE_ORDER) && defined(__BIG_ENDIAN) &&		\
-       __BYTE_ORDER == __BIG_ENDIAN) ||					\
-	(defined(sparc) || defined(POWERPC) || defined(mc68000) || defined(sel))
+#elif (defined(__BYTE_ORDER) && defined(__BIG_ENDIAN) && __BYTE_ORDER == __BIG_ENDIAN) \
+	|| (defined(BIG_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDIAN)
 # define HASH_LITTLE_ENDIAN 0
 # define HASH_BIG_ENDIAN 1
 #else
-# define HASH_LITTLE_ENDIAN 0
-# define HASH_BIG_ENDIAN 0
+# error "Unable to detect endianness"
 #endif
 
 #define hashsize(n) ((uint32_t)1<<(n))
@@ -279,7 +273,7 @@ void jenkins_hashword2 (
   acceptable.  Do NOT use for cryptographic purposes.
   -------------------------------------------------------------------------------
 */
-
+#if HASH_LITTLE_ENDIAN
 uint32_t jenkins_hashlittle(const void *key, size_t length, uint32_t initval)
 {
 	uint32_t a,b,c;                                          /* internal state */
@@ -289,7 +283,7 @@ uint32_t jenkins_hashlittle(const void *key, size_t length, uint32_t initval)
 	a = b = c = 0xdeadbeef + ((uint32_t)length) + initval;
 
 	u.ptr = key;
-	if (HASH_LITTLE_ENDIAN && ((u.i & 0x3) == 0)) {
+	if ((u.i & 0x3) == 0) {
 		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
 #ifdef VALGRIND
 		const uint8_t  *k8;
@@ -353,7 +347,7 @@ uint32_t jenkins_hashlittle(const void *key, size_t length, uint32_t initval)
 		}
 
 #endif /* !valgrind */
-	} else if (HASH_LITTLE_ENDIAN && ((u.i & 0x1) == 0)) {
+	} else if ((u.i & 0x1) == 0) {
 		const uint16_t *k = (const uint16_t *)key;         /* read 16-bit chunks */
 		const uint8_t  *k8;
 
@@ -472,7 +466,7 @@ void jenkins_hashlittle2(
 	c += *pb;
 
 	u.ptr = key;
-	if (HASH_LITTLE_ENDIAN && ((u.i & 0x3) == 0)) {
+	if ((u.i & 0x3) == 0) {
 		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
 #ifdef VALGRIND
 		const uint8_t  *k8;
@@ -537,7 +531,7 @@ void jenkins_hashlittle2(
 
 #endif /* !valgrind */
 
-	} else if (HASH_LITTLE_ENDIAN && ((u.i & 0x1) == 0)) {
+	} else if ((u.i & 0x1) == 0) {
 		/* read 16-bit chunks */
 		const uint16_t *k = (const uint16_t *)key;         
 		const uint8_t  *k8;
@@ -627,7 +621,7 @@ void jenkins_hashlittle2(
 	final(a,b,c);
 	*pc=c; *pb=b;
 }
-
+#endif /* HASH_LITTLE_ENDIAN */
 
 
 /*
@@ -636,6 +630,7 @@ void jenkins_hashlittle2(
  * from hashlittle() on all machines.  hashbig() takes advantage of
  * big-endian byte ordering. 
  */
+#if HASH_BIG_ENDIAN
 uint32_t jenkins_hashbig(const void *key, size_t length, uint32_t initval)
 {
 	uint32_t a,b,c;
@@ -645,7 +640,7 @@ uint32_t jenkins_hashbig(const void *key, size_t length, uint32_t initval)
 	a = b = c = 0xdeadbeef + ((uint32_t)length) + initval;
 
 	u.ptr = key;
-	if (HASH_BIG_ENDIAN && ((u.i & 0x3) == 0)) {
+	if ((u.i & 0x3) == 0) {
 		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
 #ifdef VALGRIND
 		const uint8_t  *k8;
@@ -755,7 +750,7 @@ uint32_t jenkins_hashbig(const void *key, size_t length, uint32_t initval)
 	final(a,b,c);
 	return c;
 }
-
+#endif /* HASH_BIG_ENDIAN */
 
 #ifdef SELF_TEST
 
