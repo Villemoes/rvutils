@@ -1,5 +1,5 @@
-#ifndef LOOKUP3_H_INCLUDED
-#define LOOKUP3_H_INCLUDED
+#ifndef JENKINS_HASH_H_INCLUDED
+#define JENKINS_HASH_H_INCLUDED
 
 /* Code from Bob Jenkins, http://burtleburtle.net/bob/hash/index.html */
 
@@ -80,4 +80,4 @@ uint32_t jenkins_hashbig(const void *key, size_t length, uint32_t initval);
 # error "Unable to detect endianness"
 #endif
 
-#endif /* !LOOKUP3_H_INCLUDED */
+#endif /* !JENKINS_HASH_H_INCLUDED */
