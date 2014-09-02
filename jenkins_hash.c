@@ -45,7 +45,7 @@
 # include <endian.h>    /* attempt to define endianness */
 #endif
 
-#include "lookup3.h"
+#include "jenkins_hash.h"
 
 /*
  * My best guess at if you are big-endian or little-endian.  This may
