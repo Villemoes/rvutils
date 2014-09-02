@@ -53,10 +53,16 @@
 	|| (defined(BYTE_ORDER) && defined(LITTLE_ENDIAN) && BYTE_ORDER == LITTLE_ENDIAN)
 # define HASH_LITTLE_ENDIAN 1
 # define HASH_BIG_ENDIAN 0
+# define MASK3 0x00ffffff
+# define MASK2 0x0000ffff
+# define MASK1 0x000000ff
 #elif (defined(__BYTE_ORDER) && defined(__BIG_ENDIAN) && __BYTE_ORDER == __BIG_ENDIAN) \
 	|| (defined(BIG_ORDER) && defined(BIG_ENDIAN) && BYTE_ORDER == BIG_ENDIAN)
 # define HASH_LITTLE_ENDIAN 0
 # define HASH_BIG_ENDIAN 1
+# define MASK3 0xffffff00
+# define MASK2 0xffff0000
+# define MASK1 0xff000000
 #else
 # error "Unable to detect endianness"
 #endif
@@ -249,7 +255,7 @@ void jenkins_hashword2 (
 
 /*
   -------------------------------------------------------------------------------
-  hashlittle() -- hash a variable-length key into a 32-bit value
+  jenkins_hash() -- hash a variable-length key into a 32-bit value
   k       : the key (the unaligned variable-length array of bytes)
   length  : the length of the key, counting by bytes
   initval : can be any 4-byte value
@@ -274,7 +280,7 @@ void jenkins_hashword2 (
   -------------------------------------------------------------------------------
 */
 #if HASH_LITTLE_ENDIAN
-uint32_t jenkins_hashlittle(const void *key, size_t length, uint32_t initval)
+uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 {
 	uint32_t a,b,c;                                          /* internal state */
 	union { const void *ptr; size_t i; } u;     /* needed for Mac Powerbook G4 */
@@ -313,17 +319,17 @@ uint32_t jenkins_hashlittle(const void *key, size_t length, uint32_t initval)
 
 		switch(length) {
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
-		case 11: c += k[2] & 0x00ffffff; b += k[1]; a += k[0]; break;
-		case 10: c += k[2] & 0x0000ffff; b += k[1]; a += k[0]; break;
-		case  9: c += k[2] & 0x000000ff; b += k[1]; a += k[0]; break;
+		case 11: c += k[2] & MASK3; b += k[1]; a += k[0]; break;
+		case 10: c += k[2] & MASK2; b += k[1]; a += k[0]; break;
+		case  9: c += k[2] & MASK1; b += k[1]; a += k[0]; break;
 		case  8: b += k[1]; a += k[0]; break;
-		case  7: b += k[1] & 0x00ffffff; a+=k[0]; break;
-		case  6: b += k[1] & 0x0000ffff; a+=k[0]; break;
-		case  5: b += k[1] & 0x000000ff; a+=k[0]; break;
+		case  7: b += k[1] & MASK3; a += k[0]; break;
+		case  6: b += k[1] & MASK2; a += k[0]; break;
+		case  5: b += k[1] & MASK1; a += k[0]; break;
 		case  4: a += k[0]; break;
-		case  3: a += k[0] & 0xffffff; break;
-		case  2: a += k[0] & 0xffff; break;
-		case  1: a += k[0] & 0xff; break;
+		case  3: a += k[0] & MASK3; break;
+		case  2: a += k[0] & MASK2; break;
+		case  1: a += k[0] & MASK1; break;
 		case  0: return c;              /* zero length strings require no mixing */
 		}
 
@@ -443,16 +449,16 @@ uint32_t jenkins_hashlittle(const void *key, size_t length, uint32_t initval)
 
 
 /*
- * hashlittle2: return 2 32-bit hash values
+ * hash2: return 2 32-bit hash values
  *
- * This is identical to hashlittle(), except it returns two 32-bit hash
+ * This is identical to hash(), except it returns two 32-bit hash
  * values instead of just one.  This is good enough for hash table
  * lookup with 2^^64 buckets, or if you want a second hash if you're not
  * happy with the first, or if you want a probably-unique 64-bit ID for
  * the key.  *pc is better mixed than *pb, so use *pc first.  If you want
  * a 64-bit value do something like "*pc + (((uint64_t)*pb)<<32)".
  */
-void jenkins_hashlittle2( 
+void jenkins_hash2(
 	const void *key,       /* the key to hash */
 	size_t      length,    /* length of the key */
 	uint32_t   *pc,        /* IN: primary initval, OUT: primary hash */
@@ -496,17 +502,17 @@ void jenkins_hashlittle2(
 
 		switch(length) {
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
-		case 11: c += k[2] & 0x00ffffff; b += k[1]; a += k[0]; break;
-		case 10: c += k[2] & 0x0000ffff; b += k[1]; a += k[0]; break;
-		case  9: c += k[2] & 0x000000ff; b += k[1]; a += k[0]; break;
+		case 11: c += k[2] & MASK3; b += k[1]; a += k[0]; break;
+		case 10: c += k[2] & MASK2; b += k[1]; a += k[0]; break;
+		case  9: c += k[2] & MASK1; b += k[1]; a += k[0]; break;
 		case  8: b += k[1]; a += k[0]; break;
-		case  7: b += k[1] & 0x00ffffff; a += k[0]; break;
-		case  6: b += k[1] & 0x0000ffff; a += k[0]; break;
-		case  5: b += k[1] & 0x000000ff; a += k[0]; break;
+		case  7: b += k[1] & MASK3; a += k[0]; break;
+		case  6: b += k[1] & MASK2; a += k[0]; break;
+		case  5: b += k[1] & MASK1; a += k[0]; break;
 		case  4: a += k[0]; break;
-		case  3: a += k[0] & 0x00ffffff; break;
-		case  2: a += k[0] & 0x0000ffff; break;
-		case  1: a += k[0] & 0x000000ff; break;
+		case  3: a += k[0] & MASK3; break;
+		case  2: a += k[0] & MASK2; break;
+		case  1: a += k[0] & MASK1; break;
 		case  0: *pc=c; *pb=b; return;  /* zero length strings require no mixing */
 		}
 
@@ -549,21 +555,25 @@ void jenkins_hashlittle2(
 		/* ---- handle the last (probably partial) block */
 		k8 = (const uint8_t *)k;
 		switch(length) {
-		case 12: c += k[4]+(((uint32_t)k[5])<<16);
+		case 12:
+			c += k[4]+(((uint32_t)k[5])<<16);
 			b += k[2]+(((uint32_t)k[3])<<16);
 			a += k[0]+(((uint32_t)k[1])<<16);
 			break;
 		case 11: c += ((uint32_t)k8[10])<<16;     /* fall through */
-		case 10: c += k[4];
+		case 10:
+			c += k[4];
 			b += k[2]+(((uint32_t)k[3])<<16);
 			a += k[0]+(((uint32_t)k[1])<<16);
 			break;
 		case  9: c += k8[8];                      /* fall through */
-		case  8: b += k[2]+(((uint32_t)k[3])<<16);
+		case  8:
+			b += k[2]+(((uint32_t)k[3])<<16);
 			a += k[0]+(((uint32_t)k[1])<<16);
 			break;
 		case  7: b += ((uint32_t)k8[6])<<16;      /* fall through */
-		case  6: b += k[2];
+		case  6:
+			b += k[2];
 			a += k[0]+(((uint32_t)k[1])<<16);
 			break;
 		case  5: b += k8[4];                      /* fall through */
@@ -624,14 +634,8 @@ void jenkins_hashlittle2(
 #endif /* HASH_LITTLE_ENDIAN */
 
 
-/*
- * hashbig():
- * This is the same as hashword() on big-endian machines.  It is different
- * from hashlittle() on all machines.  hashbig() takes advantage of
- * big-endian byte ordering. 
- */
 #if HASH_BIG_ENDIAN
-uint32_t jenkins_hashbig(const void *key, size_t length, uint32_t initval)
+uint32_t jenkins_hash(const void *key, size_t length, uint32_t initval)
 {
 	uint32_t a,b,c;
 	union { const void *ptr; size_t i; } u; /* to cast key to (size_t) happily */
@@ -670,17 +674,17 @@ uint32_t jenkins_hashbig(const void *key, size_t length, uint32_t initval)
 
 		switch(length) {
 		case 12: c += k[2]; b += k[1]; a += k[0]; break;
-		case 11: c += k[2] & 0xffffff00; b += k[1]; a += k[0]; break;
-		case 10: c += k[2] & 0xffff0000; b += k[1]; a += k[0]; break;
-		case  9: c += k[2] & 0xff000000; b += k[1]; a += k[0]; break;
+		case 11: c += k[2] & MASK3; b += k[1]; a += k[0]; break;
+		case 10: c += k[2] & MASK2; b += k[1]; a += k[0]; break;
+		case  9: c += k[2] & MASK1; b += k[1]; a += k[0]; break;
 		case  8: b += k[1]; a += k[0]; break;
-		case  7: b += k[1] & 0xffffff00; a += k[0]; break;
-		case  6: b += k[1] & 0xffff0000; a += k[0]; break;
-		case  5: b += k[1] & 0xff000000; a += k[0]; break;
+		case  7: b += k[1] & MASK3; a += k[0]; break;
+		case  6: b += k[1] & MASK2; a += k[0]; break;
+		case  5: b += k[1] & MASK1; a += k[0]; break;
 		case  4: a += k[0]; break;
-		case  3: a += k[0] & 0xffffff00; break;
-		case  2: a += k[0] & 0xffff0000; break;
-		case  1: a += k[0] & 0xff000000; break;
+		case  3: a += k[0] & MASK3; break;
+		case  2: a += k[0] & MASK2; break;
+		case  1: a += k[0] & MASK1; break;
 		case  0: return c;              /* zero length strings require no mixing */
 		}
 
@@ -749,6 +753,131 @@ uint32_t jenkins_hashbig(const void *key, size_t length, uint32_t initval)
 
 	final(a,b,c);
 	return c;
+}
+
+uint32_t jenkins_hash2(
+	const void *key,       /* the key to hash */
+	size_t      length,    /* length of the key */
+	uint32_t   *pc,        /* IN: primary initval, OUT: primary hash */
+	uint32_t   *pb)        /* IN: secondary initval, OUT: secondary hash */
+{
+	uint32_t a,b,c;
+	union { const void *ptr; size_t i; } u; /* to cast key to (size_t) happily */
+
+	/* Set up the internal state */
+	a = b = c = 0xdeadbeef + ((uint32_t)length) + *pc;
+	c += *pb;
+
+	u.ptr = key;
+	if ((u.i & 0x3) == 0) {
+		const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
+#ifdef VALGRIND
+		const uint8_t  *k8;
+#endif
+
+		/* ---- all but last block: aligned reads and affect 32 bits of (a,b,c) */
+		while (length > 12) {
+			a += k[0];
+			b += k[1];
+			c += k[2];
+			mix(a,b,c);
+			length -= 12;
+			k += 3;
+		}
+
+		/* ---- handle the last (probably partial) block */
+		/* 
+		 * "k[2]<<8" actually reads beyond the end of the string, but
+		 * then shifts out the part it's not allowed to read.  Because the
+		 * string is aligned, the illegal read is in the same word as the
+		 * rest of the string.  Every machine with memory protection I've seen
+		 * does it on word boundaries, so is OK with this.  But VALGRIND will
+		 * still catch it and complain.  The masking trick does make the hash
+		 * noticably faster for short strings (like English words).
+		 */
+#ifndef VALGRIND
+
+		switch(length) {
+		case 12: c += k[2]; b += k[1]; a += k[0]; break;
+		case 11: c += k[2] & MASK3; b += k[1]; a += k[0]; break;
+		case 10: c += k[2] & MASK2; b += k[1]; a += k[0]; break;
+		case  9: c += k[2] & MASK1; b += k[1]; a += k[0]; break;
+		case  8: b += k[1]; a += k[0]; break;
+		case  7: b += k[1] & MASK3; a += k[0]; break;
+		case  6: b += k[1] & MASK2; a += k[0]; break;
+		case  5: b += k[1] & MASK1; a += k[0]; break;
+		case  4: a += k[0]; break;
+		case  3: a += k[0] & MASK3; break;
+		case  2: a += k[0] & MASK2; break;
+		case  1: a += k[0] & MASK1; break;
+		case  0: *pc=c; *pb=b; return; /* zero length strings require no mixing */
+		}
+
+#else  /* make valgrind happy */
+
+		k8 = (const uint8_t *)k;
+		switch(length)                   /* all the case statements fall through */
+		{
+		case 12: c += k[2]; b += k[1]; a += k[0]; break;
+		case 11: c += ((uint32_t)k8[10])<<8;  /* fall through */
+		case 10: c += ((uint32_t)k8[9])<<16;  /* fall through */
+		case  9: c += ((uint32_t)k8[8])<<24;  /* fall through */
+		case  8: b += k[1]; a += k[0]; break;
+		case  7: b += ((uint32_t)k8[6])<<8;   /* fall through */
+		case  6: b += ((uint32_t)k8[5])<<16;  /* fall through */
+		case  5: b += ((uint32_t)k8[4])<<24;  /* fall through */
+		case  4: a += k[0]; break;
+		case  3: a += ((uint32_t)k8[2])<<8;   /* fall through */
+		case  2: a += ((uint32_t)k8[1])<<16;  /* fall through */
+		case  1: a += ((uint32_t)k8[0])<<24; break;
+		case  0: *pc=c; *pb=b; return;
+		}
+
+#endif /* !VALGRIND */
+
+	} else {                        /* need to read the key one byte at a time */
+		const uint8_t *k = (const uint8_t *)key;
+
+		/* ---- all but the last block: affect some 32 bits of (a,b,c) */
+		while (length > 12) {
+			a += ((uint32_t)k[0])<<24;
+			a += ((uint32_t)k[1])<<16;
+			a += ((uint32_t)k[2])<<8;
+			a += ((uint32_t)k[3]);
+			b += ((uint32_t)k[4])<<24;
+			b += ((uint32_t)k[5])<<16;
+			b += ((uint32_t)k[6])<<8;
+			b += ((uint32_t)k[7]);
+			c += ((uint32_t)k[8])<<24;
+			c += ((uint32_t)k[9])<<16;
+			c += ((uint32_t)k[10])<<8;
+			c += ((uint32_t)k[11]);
+			mix(a,b,c);
+			length -= 12;
+			k += 12;
+		}
+
+		/* ---- last block: affect all 32 bits of (c) */
+		switch(length) {                 /* all the case statements fall through */
+		case 12: c += k[11];
+		case 11: c += ((uint32_t)k[10])<<8;
+		case 10: c += ((uint32_t)k[9])<<16;
+		case  9: c += ((uint32_t)k[8])<<24;
+		case  8: b += k[7];
+		case  7: b += ((uint32_t)k[6])<<8;
+		case  6: b += ((uint32_t)k[5])<<16;
+		case  5: b += ((uint32_t)k[4])<<24;
+		case  4: a += k[3];
+		case  3: a += ((uint32_t)k[2])<<8;
+		case  2: a += ((uint32_t)k[1])<<16;
+		case  1: a += ((uint32_t)k[0])<<24;
+			break;
+		case  0: *pc=c; *pb=b; return;
+		}
+	}
+
+	final(a,b,c);
+	*pc=c; *pb=b;
 }
 #endif /* HASH_BIG_ENDIAN */
 
