@@ -10,7 +10,7 @@ LINKFLAGS=
 
 CFLAGS = -g -pthread -O2 -std=gnu99 -D_GNU_SOURCE $(WARNINGFLAGS) $(INCLUDEFLAGS)
 
-OBJ = tailq_sort.o open_noatime.so
+OBJ = tailq_sort.o open_noatime.so jenkins_hash.o
 PROG = quickstat
 
 TESTPROG = tailq_sort_test
