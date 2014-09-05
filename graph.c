@@ -234,14 +234,24 @@ graph_alloc_node(struct Graph *g, size_t len)
  * If some allocation fails, we need to undo adding nodes. This means
  * removing it from the graph's hash table, and deallocating it from
  * the top of the obstack. This can only be done for the most recently
- * added node. The node must not have been assigned to any component.
+ * added node. The node must have been added to the graph's hash
+ * table, but must not have been assigned to any component.
  */
 static void
 graph_remove_last_node(struct Graph *g, struct Node *n)
 {
-	assert(n == SLIST_FIRST(&g->nodes[g->hashmask & n->hv]));
 	assert(n->comp == NULL);
-	SLIST_REMOVE_HEAD(&g->nodes[g->hashmask & n->hv], hashlink);
+	/*
+	 * Normally, n sits at the front of its hash bucket. But if
+	 * we've added two nodes and then need to remove them again,
+	 * and the second addition caused a rehash, the first will now
+	 * be at the end of its hash bucket. Since this is a
+	 * double-rare occurence (an allocation must have failed AND
+	 * we must have triggered a rehash), we can certainly afford
+	 * an O(n) operation. SLIST_REMOVE checks for n being at the
+	 * front, and defers to SLIST_REMOVE_HEAD in the common case.
+	 */
+	SLIST_REMOVE(&g->nodes[g->hashmask & n->hv], n, Node, hashlink);
 	obstack_free(&g->node_os, n);
 	g->node_count--;
 }
@@ -608,15 +618,6 @@ graph_add_edge(struct Graph *g, const char *s1, const char *s2)
 		}
 		if (n2->comp == NULL)
 			graph_remove_last_node(g, n2);
-		/*
-		 * Bug: If adding n2 caused a hash resize, n1 is now
-		 * _last_ in its hash bucket, not first. Maybe just
-		 * use SLIST_REMOVE in graph_remove_last_node(); it
-		 * checks whether the given node happens to be first
-		 * (which in our case would be by far the most common)
-		 * and in that case uses SLIST_REMOVE_HEAD; otherwise
-		 * it does the O(n) list walk.
-		 */
 		if (n1 != n2 && n1->comp == NULL)
 			graph_remove_last_node(g, n1);
 		return -1;
