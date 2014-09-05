@@ -3,3 +3,5 @@ deps.d
 *.so
 tailq_sort_test
 quickstat
+maximal_cliques
+graphcomponents

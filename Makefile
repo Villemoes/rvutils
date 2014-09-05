@@ -10,7 +10,7 @@ LINKFLAGS=
 
 CFLAGS = -g -pthread -O2 -std=gnu99 -D_GNU_SOURCE $(WARNINGFLAGS) $(INCLUDEFLAGS)
 
-OBJ = tailq_sort.o open_noatime.so jenkins_hash.o
+OBJ = tailq_sort.o open_noatime.so jenkins_hash.o graph.o clique.o
 PROG = quickstat
 
 TESTPROG = tailq_sort_test
@@ -49,3 +49,5 @@ quickstat: LINKFLAGS += -lm -lgsl -lgslcblas
 tailq_sort_test: tailq_sort.o
 tailq_sort_test: LINKFLAGS += -lm
 
+maximal_cliques: graph.o clique.o jenkins_hash.o
+graphcomponents: graph.o jenkins_hash.o
