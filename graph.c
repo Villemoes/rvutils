@@ -208,7 +208,7 @@ graph_attempt_hash_resize(struct Graph *g)
 	for (i = 0; i < oldsize; ++i) {
 		while ((n = SLIST_FIRST(&g->nodes[i])) != NULL) {
 			SLIST_REMOVE_HEAD(&g->nodes[i], hashlink);
-			SLIST_INSERT_HEAD(&newbucket[n->hv & g->hashmask], n, hashlink);
+			SLIST_INSERT_HEAD(&newbucket[n->hv & newmask], n, hashlink);
 		}
 	}
 	free(g->nodes);
