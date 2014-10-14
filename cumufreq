@@ -1,8 +1,4 @@
 #!/usr/bin/perl
-#
-# File: cumfreq.pl
-# Time-stamp: <2014-10-14 14:27:15 villemoes>
-# Author: Rasmus Villemoes
 
 use strict;
 use warnings;
