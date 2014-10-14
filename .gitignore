@@ -5,3 +5,6 @@ tailq_sort_test
 quickstat
 maximal_cliques
 graphcomponents
+librvutils.a
+librvutils.so*
+

@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+
+set -e
+
+HEADER_DIR=/usr/local/include/rvutils
+LIB_DIR=/usr/local/lib
+HEADERS="clique.h graph.h jenkins_hash.h tailq_sort.h"
+SHARED_OBJ="open_noatime.so librvutils.so.1.0"
+OBJ="librvutils.a"
+
+mkdir -m 755 -p ${HEADER_DIR}
+install -m 644 ${HEADERS} ${HEADER_DIR}
+
+install -m 755 ${SHARED_OBJ} ${LIB_DIR}
+install -m 644 ${OBJ} ${LIB_DIR}
+
+for baselib in ${SHARED_OBJ}
+do
+    shortlib=$baselib
+    while extn=$(echo $shortlib | sed -n '/\.[0-9][0-9]*$/s/.*\(\.[0-9][0-9]*\)$/\1/p')
+          [ -n "$extn" ]
+    do
+        shortlib=$(basename $shortlib $extn)
+        ln -sf $baselib ${LIB_DIR}/$shortlib
+    done
+done
+
+ldconfig -n ${LIB_DIR}

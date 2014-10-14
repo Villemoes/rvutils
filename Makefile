@@ -10,7 +10,8 @@ LINKFLAGS=
 
 CFLAGS = -g -pthread -O2 -std=gnu99 -D_GNU_SOURCE $(WARNINGFLAGS) $(INCLUDEFLAGS)
 
-OBJ = tailq_sort.o open_noatime.so jenkins_hash.o graph.o clique.o
+SOBJ = open_noatime.so librvutils.so.1.0
+OBJ = tailq_sort.o jenkins_hash.o graph.o clique.o
 PROG = quickstat
 
 TESTPROG = tailq_sort_test
@@ -23,7 +24,7 @@ depssuffix = deps
 
 .PHONY: all test
 
-all: $(OBJ) $(PROG)
+all: $(SOBJ) librvutils.a $(PROG)
 
 test: $(TESTPROG)
 	@for x in $(TESTPROG) ; do \
@@ -41,6 +42,13 @@ $(depsdir):
 
 %: %.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LINKFLAGS)
+
+librvutils.so.1.0: $(OBJ)
+	$(CC) -shared -Wl,-soname,librvutils.so.1 -o $@ $^ $(LINKFLAGS)
+
+librvutils.a: $(OBJ)
+	ar -rcs $@ $^
+
 
 open_noatime.so: LINKFLAGS += -ldl
 
