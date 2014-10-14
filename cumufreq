@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+#
+# File: cumfreq.pl
+# Time-stamp: <2014-10-14 14:27:15 villemoes>
+# Author: Rasmus Villemoes
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+
+my @group = ();
+my $help = 0;
+my $min_frac = 0.0;
+my $max_cumufrac = 1.0;
+my $separator = undef;
+
+sub err_exit {
+    my $fmt = shift;
+    my $txt = sprintf($fmt, @_);
+    $txt .= "\n" unless $txt =~ m/\n$/;
+    printf STDERR $txt;
+    exit(1);
+}
+
+sub print_usage {
+    err_exit("usage: %s [--group=<column index>] <files>", $0);
+}
+
+sub print_help {
+    print <<HELP;
+$0 - get cumulative frequencies of identical lines
+
+This script generates one or more tables consisting of relative and
+absolute frequencies of identical input lines, in the tab-separated
+format
+
+<count> <cumulative count> <%> <cumulative %> <original line>
+
+Each table is sorted with the most frequent lines at the top.
+
+By default, only a single table is generated. Using the --group=n
+option, the lines are grouped according to the contents of the n'th
+column (1-based), and one table is generated for each distinct value
+occuring in that column. The --group option can also be used multiple
+times, to group the data by more than one criteria.
+
+Giving the --min <frac> option can be used to print only lines with a
+relative frequency of at least <frac> (which must be a decimal
+fraction, optionally with a % suffix). Similarly, the --max <frac>
+option can be used to stop printing of each frequency table once the
+cumulative frequency has reached <frac>.
+HELP
+    exit(0);
+}
+
+if ($help) {
+    print_help();
+}
+
+GetOptions("group=i" => \@group,
+	   "min=s" => \$min_frac,
+	   "max=s" => \$max_cumufrac,
+	   "sep:s" => \$separator,
+           "help|h"  => \$help)
+    or print_usage();
+
+# Change to 0-based indexing
+@group = map {$_ - 1} @group;
+# Interpret % characters
+$min_frac = $1 / 100.0 if ($min_frac =~ m/^(.*)%\s*$/);
+$max_cumufrac = $1 / 100.0 if ($max_cumufrac =~ m/^(.*)%\s*$/);
+
+
+my %freq;
+my %total;
+
+while (<>) {
+    my $groupid = join(';', (split)[@group]);
+    $freq{$groupid}{$_}++;
+    $total{$groupid}++;
+}
+
+my $groupcount = scalar keys %total;
+for my $groupid (sort {$total{$b} <=> $total{$a} || $a cmp $b} keys %total) {
+    my $href = $freq{$groupid};
+    my $cumu = 0;
+    my $t = $total{$groupid};
+    for (sort {$href->{$b} <=> $href->{$a}} keys %$href) {
+	$cumu += $href->{$_};
+	my $frac = $href->{$_}/$t;
+	my $cumufrac = $cumu/$t;
+	last if $frac < $min_frac;
+	printf "%d\t%d\t%.1f\t%.1f\t%s", $href->{$_}, $cumu, 100.0*$frac, 100.0*$cumufrac, $_;
+	last if $cumufrac > $max_cumufrac;
+    }
+    print "\n" if (defined $separator && --$groupcount);
+}
