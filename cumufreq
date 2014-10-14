@@ -90,5 +90,5 @@ for my $groupid (sort {$total{$b} <=> $total{$a} || $a cmp $b} keys %total) {
 	printf "%d\t%d\t%.1f\t%.1f\t%s", $href->{$_}, $cumu, 100.0*$frac, 100.0*$cumufrac, $_;
 	last if $cumufrac > $max_cumufrac;
     }
-    print "\n" if (defined $separator && --$groupcount);
+    print "$separator\n" if (defined $separator && --$groupcount);
 }
