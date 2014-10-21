@@ -5,7 +5,7 @@ set -e
 
 HEADER_DIR=/usr/local/include/rvutils
 LIB_DIR=/usr/local/lib
-HEADERS="clique.h graph.h jenkins_hash.h tailq_sort.h"
+HEADERS="clique.h graph.h jenkins_hash.h tailq_sort.h tmppool.h ass.h"
 SHARED_OBJ="open_noatime.so librvutils.so.1.0"
 OBJ="librvutils.a"
 

@@ -11,7 +11,7 @@ LINKFLAGS=
 CFLAGS = -g -pthread -O2 -std=gnu99 -D_GNU_SOURCE $(WARNINGFLAGS) $(INCLUDEFLAGS)
 
 SOBJ = open_noatime.so librvutils.so.1.0
-OBJ = tailq_sort.o jenkins_hash.o graph.o clique.o
+OBJ = tailq_sort.o jenkins_hash.o graph.o clique.o tmppool.o
 PROG = quickstat
 
 TESTPROG = tailq_sort_test
