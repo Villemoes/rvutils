@@ -35,7 +35,8 @@ struct tmppool {
 		.init_obj = (init),					\
 		.destroy_obj = (destroy),				\
 		.mask = ((N)-1) +					\
-		static_assert_zero((N)&((N)-1), N_must_be_power_of_2),	\
+		static_assert_zero(((N)&((N)-1)) == 0,			\
+				N_must_be_power_of_2),			\
 		.obj_size = (objsize),					\
 		.list = {						\
 			[0 ... ((N)-1)] = TMPPOOL_LIST_INITIALIZER,	\
