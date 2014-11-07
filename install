@@ -5,13 +5,17 @@ set -e
 
 HEADER_DIR=/usr/local/include/rvutils
 LIB_DIR=/usr/local/lib
+BIN_DIR=/usr/local/bin
 HEADERS="clique.h graph.h jenkins_hash.h tailq_sort.h tmppool.h ass.h"
 SHARED_OBJ="open_noatime.so librvutils.so.1.0"
 OBJ="librvutils.a"
+BIN="quickstat split_col cumufreq"
 
 mkdir -m 755 -p ${HEADER_DIR}
-install -m 644 ${HEADERS} ${HEADER_DIR}
+mkdir -m 755 -p ${BIN_DIR}
 
+install -m 644 ${HEADERS} ${HEADER_DIR}
+install -m 755 ${BIN} ${BIN_DIR}
 install -m 755 ${SHARED_OBJ} ${LIB_DIR}
 install -m 644 ${OBJ} ${LIB_DIR}
 
