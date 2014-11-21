@@ -330,11 +330,11 @@ print_size_t(const char *name, size_t val)
 	printf("%-20s  %zu\n", name, val);
 }
 static void
-print_histogram(const char *title, const gsl_histogram *hist)
+print_histogram(const char *title, const gsl_histogram *hist, size_t total)
 {
 	size_t bins;
 	double low, high;
-	unsigned long freq;
+	double freq, frac;
 	size_t i;
 
 	bins = gsl_histogram_bins(hist);
@@ -343,8 +343,10 @@ print_histogram(const char *title, const gsl_histogram *hist)
 	printf("           Range               Frequency\n");
 	for (i = 0; i < bins; ++i) {
 		gsl_histogram_get_range(hist, i, &low, &high);
-		freq = (unsigned long) gsl_histogram_get(hist, i);
-		printf("%#10.5g <= x < %-#10.5g\t%10lu\n", low, high, freq);
+		freq = gsl_histogram_get(hist, i);
+		frac = freq/total;
+		printf("%#10.5g <= x < %-#10.5g\t%8lu (%#5.2f%%)\n", low, high,
+			(unsigned long)freq, 100.0*frac);
 	}
 }
 
@@ -380,9 +382,9 @@ qstat_print(const struct qstat *qs)
 		print_size_t("NaNs", qs->NaN_count);
 
 	if (qs->linhg)
-		print_histogram("Linear histogram", qs->linhg);
+		print_histogram("Linear histogram", qs->linhg, qs->count);
 	if (qs->loghg && qs->min > 0.0)
-		print_histogram("Logarithmic histogram", qs->loghg);
+		print_histogram("Logarithmic histogram", qs->loghg, qs->count);
 }
 
 
