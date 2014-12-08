@@ -137,6 +137,9 @@ tmppool_put(struct tmppool *pool, void *obj)
 	unsigned idx;
 	struct tmppool_obj *t;
 
+	if (!obj)
+		return;
+
 	t = container_of(obj, struct tmppool_obj, obj);
 	idx = t->cpu & pool->mask;
 

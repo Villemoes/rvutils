@@ -43,7 +43,7 @@ struct tmppool {
 		},							\
 	}
 
-
+/* Passing NULL to _put as second argument is safe and does nothing. */
 void *tmppool_get(struct tmppool *pool);
 void tmppool_put(struct tmppool *pool, void *obj);
 void tmppool_release(struct tmppool *pool);
