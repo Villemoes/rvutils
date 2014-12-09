@@ -10,6 +10,7 @@ my $help = 0;
 my $min_frac = 0.0;
 my $max_cumufrac = 1.0;
 my $separator = undef;
+my $reverse = 0;
 
 sub err_exit {
     my $fmt = shift;
@@ -58,6 +59,7 @@ GetOptions("group=i" => \@group,
 	   "min=s" => \$min_frac,
 	   "max=s" => \$max_cumufrac,
 	   "sep:s" => \$separator,
+	   "reverse!" => \$reverse,
            "help|h"  => \$help)
     or print_usage();
 
@@ -82,11 +84,14 @@ for my $groupid (sort {$total{$b} <=> $total{$a} || $a cmp $b} keys %total) {
     my $href = $freq{$groupid};
     my $cumu = 0;
     my $t = $total{$groupid};
-    for (sort {$href->{$b} <=> $href->{$a}} keys %$href) {
+    for (sort {$reverse ? $href->{$a} <=> $href->{$b} : $href->{$b} <=> $href->{$a}} keys %$href) {
 	$cumu += $href->{$_};
 	my $frac = $href->{$_}/$t;
 	my $cumufrac = $cumu/$t;
-	last if $frac < $min_frac;
+	if ($frac < $min_frac) {
+	    next if $reverse;
+	    last;
+	}
 	printf "%d\t%d\t%.1f\t%.1f\t%s", $href->{$_}, $cumu, 100.0*$frac, 100.0*$cumufrac, $_;
 	last if $cumufrac > $max_cumufrac;
     }
