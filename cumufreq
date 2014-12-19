@@ -51,10 +51,6 @@ HELP
     exit(0);
 }
 
-if ($help) {
-    print_help();
-}
-
 GetOptions("group=i" => \@group,
 	   "min=s" => \$min_frac,
 	   "max=s" => \$max_cumufrac,
@@ -62,6 +58,10 @@ GetOptions("group=i" => \@group,
 	   "reverse!" => \$reverse,
            "help|h"  => \$help)
     or print_usage();
+
+if ($help) {
+    print_help();
+}
 
 # Change to 0-based indexing
 @group = map {$_ - 1} @group;
