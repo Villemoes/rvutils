@@ -131,6 +131,7 @@ my %outfiles = ();
 my $listhead = {};
 $listhead->{next} = $listhead->{prev} = $listhead;
 my $wopen_count = 0; # number of files open for writing (or appending)
+my $wopen_max = 1000; # Never exceed this number.
 
 sub compute_outfn {
     my $col = shift;
@@ -270,6 +271,7 @@ sub open_append {
 sub open_common {
     my ($fn, $mode, $verb) = @_;
     my ($h, $r);
+    close_lru_file() while ($wopen_count >= $wopen_max);
     while (!($r = open($h, $mode, $fn)) && ($! == EMFILE || $! == ENFILE)) {
         last if $wopen_count == 0;
         close_lru_file();
