@@ -274,7 +274,7 @@ sub open_common {
     close_lru_file() while ($wopen_count >= $wopen_max);
     while (!($r = open($h, $mode, $fn)) && ($! == EMFILE || $! == ENFILE)) {
         last if $wopen_count == 0;
-        close_lru_file();
+        close_lru_files($! == EMFILE ? $wopen_count - 1 : int($wopen_count/2));
     }
     if (!$r) {
         die "unable to open ${fn} for ${verb}: $!";
@@ -295,6 +295,10 @@ sub close_lru_file {
     $wopen_count--;
 }
 
+sub close_lru_files {
+    my $target = shift;
+    close_lru_file() while ($wopen_count > $target);
+}
 
 
 push @ARGV, '-' if (@ARGV == 0);
@@ -302,7 +306,5 @@ for my $inp (@ARGV) {
     do_input_file($inp);
 }
 
-# Close all output files. We reuse close_lru_file() so that errors are reported.
-while ($wopen_count > 0) {
-    close_lru_file();
-}
+# Close all output files. We reuse close_lru_files() so that errors are reported.
+close_lru_files(0);
