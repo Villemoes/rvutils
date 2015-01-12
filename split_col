@@ -130,7 +130,7 @@ sub compute_prefix_suffix {
 my %outfiles = ();
 my $listhead = {};
 $listhead->{next} = $listhead->{prev} = $listhead;
-my $number_of_open_files = 0; # number of files open for writing, that is
+my $wopen_count = 0; # number of files open for writing (or appending)
 
 sub compute_outfn {
     my $col = shift;
@@ -248,7 +248,7 @@ sub get_output_handle {
         $outfiles{$fn} = $href;
     }
     list_insert_head($href);
-    $number_of_open_files++;
+    $wopen_count++;
     return $href->{handle};
 }
 
@@ -271,7 +271,7 @@ sub open_common {
     my ($fn, $mode, $verb) = @_;
     my ($h, $r);
     while (!($r = open($h, $mode, $fn)) && ($! == EMFILE || $! == ENFILE)) {
-        last if $number_of_open_files == 0;
+        last if $wopen_count == 0;
         close_lru_file();
     }
     if (!$r) {
@@ -281,8 +281,8 @@ sub open_common {
 }
 
 sub close_lru_file {
-    if ($number_of_open_files <= 0) {
-        die "BUG! ", (caller(0))[3], "() should not be called when number_of_open_files == $number_of_open_files";
+    if ($wopen_count <= 0) {
+        die "BUG! ", (caller(0))[3], "() should not be called when wopen_count == $wopen_count";
     }
     my $href = list_remove_last();
     if (!defined $href) {
@@ -290,7 +290,7 @@ sub close_lru_file {
     }
     close($href->{handle}) or die "closing file handle failed: $!";
     $href->{handle} = undef;
-    $number_of_open_files--;
+    $wopen_count--;
 }
 
 
@@ -301,6 +301,6 @@ for my $inp (@ARGV) {
 }
 
 # Close all output files. We reuse close_lru_file() so that errors are reported.
-while ($number_of_open_files > 0) {
+while ($wopen_count > 0) {
     close_lru_file();
 }
