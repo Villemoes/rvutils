@@ -254,38 +254,28 @@ sub get_output_handle {
 
 sub open_read {
     my $fn = shift;
-    my ($h, $r);
-    while (!($r = open($h, '<', $fn)) && ($! == EMFILE || $! == ENFILE)) {
-        last if $number_of_open_files == 0;
-        close_lru_file();
-    }
-    if (!$r) {
-        die "unable to open $fn for reading: $!";
-    }
-    return $h;
+    return open_common($fn, '<', 'reading');
 }
 sub open_write {
     my $fn = shift;
-    my ($h, $r);
-    while (!($r = open($h, '>', $fn)) && ($! == EMFILE || $! == ENFILE)) {
-        last if $number_of_open_files == 0;
-        close_lru_file();
-    }
-    if (!$r) {
-        die "unable to open $fn for writing: $!";
-    }
+    my $h = open_common($fn, '>', 'writing');
     print $h $headerline if defined $headerline;
     return $h;
 }
 sub open_append {
     my $fn = shift;
+    return open_common($fn, '>>', 'appending');
+}
+
+sub open_common {
+    my ($fn, $mode, $verb) = @_;
     my ($h, $r);
-    while (!($r = open($h, '>>', $fn)) && ($! == EMFILE || $! == ENFILE)) {
+    while (!($r = open($h, $mode, $fn)) && ($! == EMFILE || $! == ENFILE)) {
         last if $number_of_open_files == 0;
         close_lru_file();
     }
     if (!$r) {
-        die "unable to open $fn for appending: $!";
+        die "unable to open ${fn} for ${verb}: $!";
     }
     return $h;
 }
