@@ -1,0 +1,71 @@
+#!/usr/bin/perl
+
+use Getopt::Long;
+
+my $frac        = undef;
+my $count       = undef;
+my $line_number = undef;
+my $seed        = undef;
+
+GetOptions("n|count=i" => \$count,
+	   "s|seed=i" => \$seed,
+	   "f|fraction=f" => \$frac,
+	   "l|line-number!" => \$line_number)
+    or print_usage();
+
+srand($seed) if defined $seed;
+
+if (defined $frac) {
+    approx();
+} else {
+    $count = 1 unless defined $count;
+    exact();
+}
+
+sub exact {
+    # If rand(x) did in fact produce numbers uniformly in [0, x), this
+    # algorithm would produce each of the binom(N, k) k-subsets of the
+    # N input lines with equal probability. Moreover, we don't need to
+    # know N in advance, and require only O(k) memory.
+    my @lines = ();
+    while (<>) {
+	if (@lines < $count) {
+	    push @lines, [$., $_];
+	    next;
+	}
+	$lines[rand($count)] = [$., $_] if rand($.) < $count;
+    }
+    @lines = sort {$a->[0] <=> $b->[0]} @lines;
+    print_lines(@lines);
+}
+
+sub approx {
+    my $line;
+
+    if (defined $count) {
+	while ($count && ($line = <>)) {
+	    if (rand() < $frac) {
+		$count--;
+		print_lines([$., $line]);
+	    }
+	}
+    } else {
+	while ($line = <>) {
+	    print_lines([$., $line]) if (rand() < $frac);
+	}
+    }
+
+}
+
+sub print_lines {
+    if ($line_number) {
+	printf "%s\t%s", $_->[0], $_->[1] for (@_);
+    } else {
+	print $_->[1] for (@_);
+    }
+}
+
+sub print_usage {
+    print "$0 [-n COUNT] [-f FRACTION] [-l]\n";
+    exit(1);
+}
