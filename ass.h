@@ -24,12 +24,25 @@
 #define AZ(e)  assert((e) == 0)
 #define AN(e)  assert((e) != 0)
 
-/* gcc has _Static_assert since at least 4.6, and Clang has it for a couple of years. */
-#ifndef static_assert
-#define static_assert _Static_assert
-#endif
+/*
+ * gcc has _Static_assert since at least 4.6, and Clang has it for a
+ * couple of years. Quite often, I forget the required string
+ * argument, and usually it is rather obvious from the expression
+ * itself what is being asserted. With a little preprocessor magic, we
+ * can supply a 'default' string: simply use the stringification of the
+ * expression.
+ */
+#undef static_assert
+#undef _static_assert
+#define _static_assert(expr, string, ...)				\
+	_Static_assert(expr, string)
+
+#define static_assert(expr, ...)					\
+	_static_assert(expr, ## __VA_ARGS__, #expr)
+
 
 static_assert(1, "WTF? 1 is supposed to be true");
+static_assert(sizeof(long) == sizeof(void*));
 
 /**
  * static_assert_zero(e, text) - static assertion in expression context
