@@ -215,7 +215,7 @@ qstat_append_file(struct qstat *qs, FILE *fp)
 		for (token = strtok_r(line, " \t\n\r\v", &saveptr); token; token = strtok_r(NULL, " \t\n\r\v", &saveptr)) {
 			char *dummy;
 			double next = strtod(token, &dummy);
-			if (dummy == token) {
+			if (dummy == token || *dummy != '\0') {
 				/* Just ignore this token. */
 				continue;
 			}
