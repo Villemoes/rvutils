@@ -335,6 +335,7 @@ print_histogram(const char *title, const gsl_histogram *hist, size_t total)
 	size_t bins;
 	double low, high;
 	double freq, frac;
+	double cumufreq = 0.0, cumufrac;
 	size_t i;
 
 	bins = gsl_histogram_bins(hist);
@@ -344,9 +345,11 @@ print_histogram(const char *title, const gsl_histogram *hist, size_t total)
 	for (i = 0; i < bins; ++i) {
 		gsl_histogram_get_range(hist, i, &low, &high);
 		freq = gsl_histogram_get(hist, i);
+		cumufreq += freq;
 		frac = freq/total;
-		printf("%#10.5g <= x < %-#10.5g\t%8lu (%#5.2f%%)\n", low, high,
-			(unsigned long)freq, 100.0*frac);
+		cumufrac = cumufreq/total;
+		printf("%#10.5g <= x < %-#10.5g\t%8lu (%#5.2f%% | %#6.2f%%)\n", low, high,
+			(unsigned long)freq, 100.0*frac, 100.0*cumufrac);
 	}
 }
 
