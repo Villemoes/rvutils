@@ -25,12 +25,12 @@ my $prefix = undef;
 my $suffix = undef;
 my $template_substr = '{}';
 my $header = 0;
-my $col = 1;
+my $column = 1;
 my $delim = "\t";
 my $headerline = undef;
 my $help = 0;
 my $current_template;
-
+my $current_infile;
 
 sub err_exit {
     my $fmt = shift;
@@ -114,7 +114,7 @@ HELP
 GetOptions("template=s" => \$template,
 #           "substr=s"   => \$template_substr,
            "header!"    => \$header,
-           "column=i"   => \$col,
+           "column=i"   => \$column,
            "help|h"     => \$help)
     or print_usage();
 
@@ -122,9 +122,9 @@ if ($help) {
     print_help();
 }
 
-err_exit("column index must be positive") if ($col <= 0);
-# $col is given 1-based, but we use 0-based indexing internally
-$col--;
+err_exit("column index must be positive") if ($column <= 0);
+# $column is given 1-based, but we use 0-based indexing internally
+$column--;
 
 if (defined $template) {
     if ($template =~ m/\Q$template_substr\E/) {
@@ -138,16 +138,15 @@ if (defined $template) {
 }
 
 sub compute_current_template {
-    my $infn = shift;
     my ($base, $ext);
 
     $current_template = $template;
 
-    if ($infn =~ m#^(.*)(\.[^/]*)$#) {
+    if ($current_infile =~ m#^(.*)(\.[^/]*)$#) {
 	$base = $1;
 	$ext = $2;
     } else {
-	$base = $infn;
+	$base = $current_infile;
 	$ext = '';
     }
     $current_template =~ s/\Q{.}\E/$base/;
@@ -161,24 +160,39 @@ $listhead->{next} = $listhead->{prev} = $listhead;
 my $wopen_count = 0; # number of files open for writing (or appending)
 my $wopen_max = 1000; # Never exceed this number.
 
+sub get_replacement {
+    my ($fields, $repstring) = @_;
+    my $c;
+
+    $repstring eq ''
+	or die "bug: unrecognized replacement string '$repstring'";
+    $c = $column;
+
+    exists $fields->[$c]
+	or die "not enough columns on line $. of $current_infile";
+
+    return $fields->[$c];
+}
+
 sub compute_outfn {
     my $ret = $current_template;
-    my $col = shift;
-    $ret =~ s/\Q$template_substr\E/$col/;
+    my $fields = shift;
+    $ret =~ s/\{()\}/get_replacement($fields, $1)/ge;
     return $ret;
 }
 
 sub do_input_file {
     my $infile = shift;
     my $h = $infile eq '-' ? \*STDIN : open_read($infile);
-    $infile = 'STDIN' if $infile eq '-';
-    my ($line, $x, $outfn, $outhandle);
+    $current_infile = ($infile eq '-') ? 'STDIN' : $infile;
+    my ($line, $outfn, $outhandle);
+    my @fields;
 
     if ($header) {
         $headerline = <$h>;
     }
 
-    compute_current_template($infile);
+    compute_current_template();
 
     while (<$h>) {
         # Save a copy of the text and then chomp $_. We don't want the
@@ -186,10 +200,8 @@ sub do_input_file {
         # based on the last column.
         $line = $_;
         chomp;
-        $x = (split /\Q$delim\E/o)[$col];
-        defined $x
-            or die "not enough columns on line $. of $infile";
-        $outfn = compute_outfn($x);
+        @fields = (split /\Q$delim\E/o);
+        $outfn = compute_outfn(\@fields);
         $outhandle = get_output_handle($outfn);
         print $outhandle $line;
     }
