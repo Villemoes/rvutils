@@ -158,8 +158,8 @@ sub compute_current_template {
 	$base = $current_infile;
 	$ext = '';
     }
-    $current_template =~ s/\Q{.}\E/$base/;
-    $current_template =~ s/\Q{..}\E/$ext/;
+    $current_template =~ s/\Q{.}\E/$base/g;
+    $current_template =~ s/\Q{..}\E/$ext/g;
 }
 
 
