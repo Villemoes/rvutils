@@ -29,6 +29,7 @@ my $col = 1;
 my $delim = "\t";
 my $headerline = undef;
 my $help = 0;
+my $current_template;
 
 
 sub err_exit {
@@ -104,25 +105,20 @@ err_exit("column index must be positive") if ($col <= 0);
 $col--;
 
 if (defined $template) {
-    if ($template =~ m/^(.*)$template_substr(.*)$/) {
-	$prefix = $1;
-	$suffix = $2;
-    }
-    else {
+    if ($template =~ m/\Q$template_substr\E/) {
+	$current_template = $template;
+    } else {
 	err_exit("the substring %s must occur precisely once in the template",
 		 $template_substr);
     }
 }
 
-sub compute_prefix_suffix {
+sub compute_current_template {
     my $infn = shift;
     if ($infn =~ m/^(.*)(\..*)$/) {
-	$prefix = $1 . '_';
-	$suffix = $2;
-    }
-    else {
-	$prefix = $infn . '_';
-	$suffix = '';
+	$current_template = $1 . '_' . $template_substr . $2;
+    } else {
+	$current_template = $infn . '_' . $template_substr;
     }
 }
 
@@ -134,8 +130,10 @@ my $wopen_count = 0; # number of files open for writing (or appending)
 my $wopen_max = 1000; # Never exceed this number.
 
 sub compute_outfn {
+    my $ret = $current_template;
     my $col = shift;
-    return $prefix . $col . $suffix;
+    $ret =~ s/\Q$template_substr\E/$col/;
+    return $ret;
 }
 
 sub do_input_file {
@@ -148,7 +146,7 @@ sub do_input_file {
         $headerline = <$h>;
     }
 
-    compute_prefix_suffix($infile) if (!defined $template);
+    compute_current_template($infile) if (!defined $template);
 
     while (<$h>) {
         # Save a copy of the text and then chomp $_. We don't want the
