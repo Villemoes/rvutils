@@ -87,9 +87,10 @@ attempted. It is obviously dangerous if the column may contain
 slashes, so this should be avoided, as should any character which one
 wouldn't want to end up in a filename.
 
-Use - to read from stdin. When reading from stdin, the filename
-implicitly used for generating output file names is STDIN, so it is
-recommended to use the --template option in that case.
+Use - to read from stdin (or just omit trailing file names). When
+reading from stdin, the filename implicitly used for generating output
+file names is STDIN, so it is recommended to use the --template option
+in that case.
 
 Apart from {}, there are a few other replacement strings available:
 
