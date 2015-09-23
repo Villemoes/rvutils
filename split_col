@@ -31,6 +31,7 @@ my $headerline = undef;
 my $help = 0;
 my $current_template;
 my $current_infile;
+my $current_fields;
 
 sub err_exit {
     my $fmt = shift;
@@ -161,23 +162,22 @@ my $wopen_count = 0; # number of files open for writing (or appending)
 my $wopen_max = 1000; # Never exceed this number.
 
 sub get_replacement {
-    my ($fields, $repstring) = @_;
+    my ($repstring) = @_;
     my $c;
 
     $repstring eq ''
 	or die "bug: unrecognized replacement string '$repstring'";
     $c = $column;
 
-    exists $fields->[$c]
+    exists $current_fields->[$c]
 	or die "not enough columns on line $. of $current_infile";
 
-    return $fields->[$c];
+    return $current_fields->[$c];
 }
 
 sub compute_outfn {
     my $ret = $current_template;
-    my $fields = shift;
-    $ret =~ s/\{()\}/get_replacement($fields, $1)/ge;
+    $ret =~ s/\{()\}/get_replacement($1)/ge;
     return $ret;
 }
 
@@ -186,7 +186,6 @@ sub do_input_file {
     my $h = $infile eq '-' ? \*STDIN : open_read($infile);
     $current_infile = ($infile eq '-') ? 'STDIN' : $infile;
     my ($line, $outfn, $outhandle);
-    my @fields;
 
     if ($header) {
         $headerline = <$h>;
@@ -200,8 +199,8 @@ sub do_input_file {
         # based on the last column.
         $line = $_;
         chomp;
-        @fields = (split /\Q$delim\E/o);
-        $outfn = compute_outfn(\@fields);
+	$current_fields = [split /\Q$delim\E/o];
+        $outfn = compute_outfn();
         $outhandle = get_output_handle($outfn);
         print $outhandle $line;
     }
