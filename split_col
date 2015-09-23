@@ -63,7 +63,7 @@ no ., the implicitly used template is filename_{}.
 
 The only supported column delimiter is tab (\\t).
 
-For example, suppose foo contains four lines
+For example, suppose foo contains these lines:
 
     horse     4
     spider    8
@@ -72,10 +72,14 @@ For example, suppose foo contains four lines
     human     2
     millipede 1000
 
-Running "$0 --column 2 foo" will produce four files, foo_2, foo_4,
-foo_8, foo_1000, containing 1, 2, 2, and 1 lines, respectively. Had
-the option "--template 'animals_with_{}_legs'" been given, the output
-files would have had more descriptive names.
+Running
+
+    $0 --column 2 foo
+
+will produce four files, foo_2, foo_4, foo_8, foo_1000, containing 1,
+2, 2, and 1 lines, respectively. Had the option "--template
+'animals_with_{}_legs'" been given, the output files would have had
+more descriptive names.
 
 Sanitizing the column contents or the resulting file names is not
 attempted. It is obviously dangerous if the column may contain
