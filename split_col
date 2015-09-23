@@ -23,7 +23,7 @@ use Errno qw(EMFILE ENFILE);
 my $template = undef;
 my $prefix = undef;
 my $suffix = undef;
-my $template_substr = 'XXX';
+my $template_substr = '{}';
 my $header = 0;
 my $col = 1;
 my $delim = "\t";
@@ -40,7 +40,7 @@ sub err_exit {
 }
 
 sub print_usage {
-    err_exit("usage: %s [--template=aXXXb] [--column=<n>] files", $0);
+    err_exit("usage: %s [--template=a{}b] [--column=<n>] files", $0);
 }
 
 sub print_help {
@@ -52,13 +52,13 @@ Options:
   --header        Treat the first line of each input file as a header line.
                   That line will be copied verbatim to each output file.
   --template str  Use str as the template for output files names. str
-                  should contain the substring XXX precisely once -
+                  should contain the substring {} precisely once -
                   this will be replaced by the contents of the
                   column.
 
 If --template is not given, the output from an input file foo.bar.ext
-will use the template foo.bar_XXX.ext. If the input filename contains
-no ., the implicitly used template is filename_XXX.
+will use the template foo.bar_{}.ext. If the input filename contains
+no ., the implicitly used template is filename_{}.
 
 The only supported column delimiter is tab (\\t).
 
@@ -73,7 +73,7 @@ For example, suppose foo contains four lines
 
 Running "$0 --column 2 foo" will produce four files, foo_2, foo_4,
 foo_8, foo_1000, containing 1, 2, 2, and 1 lines, respectively. Had
-the option "--template animals_with_XXX_legs" been given, the output
+the option "--template 'animals_with_{}_legs'" been given, the output
 files would have had more descriptive names.
 
 Sanitizing the column contents or the resulting file names is not
