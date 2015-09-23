@@ -89,6 +89,24 @@ wouldn't want to end up in a filename.
 Use - to read from stdin. When reading from stdin, the filename
 implicitly used for generating output file names is STDIN, so it is
 recommended to use the --template option in that case.
+
+Apart from {}, there are a few other replacement strings available:
+
+{.}  Current input file without extension:
+     foo.jpg becomes foo
+     subdir/foo.jpg becomes subdir/foo
+     sub.dir/foo.jpg becomes sub.dir/foo
+     sub.dir/bar remains sub.dir/bar
+
+{..} Extension of current input file, including the dot.  If the
+     current input file does not have an extension, this is empty. In
+     the above four examples, we would have ".jpg", ".jpg", ".jpg",
+     and "", respectively.
+
+     {.}{..} is always equal to the current input file name.
+
+The default template described above is actually {.}_{}{..}
+
 HELP
     exit(0);
 }
@@ -115,15 +133,25 @@ if (defined $template) {
 	err_exit("the substring %s must occur precisely once in the template",
 		 $template_substr);
     }
+} else {
+    $template = '{.}_{}{..}';
 }
 
 sub compute_current_template {
     my $infn = shift;
-    if ($infn =~ m/^(.*)(\..*)$/) {
-	$current_template = $1 . '_' . $template_substr . $2;
+    my ($base, $ext);
+
+    $current_template = $template;
+
+    if ($infn =~ m#^(.*)(\.[^/]*)$#) {
+	$base = $1;
+	$ext = $2;
     } else {
-	$current_template = $infn . '_' . $template_substr;
+	$base = $infn;
+	$ext = '';
     }
+    $current_template =~ s/\Q{.}\E/$base/;
+    $current_template =~ s/\Q{..}\E/$ext/;
 }
 
 
@@ -150,7 +178,7 @@ sub do_input_file {
         $headerline = <$h>;
     }
 
-    compute_current_template($infile) if (!defined $template);
+    compute_current_template($infile);
 
     while (<$h>) {
         # Save a copy of the text and then chomp $_. We don't want the
