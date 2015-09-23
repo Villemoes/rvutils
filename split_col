@@ -113,10 +113,9 @@ HELP
 }
 
 GetOptions("template=s" => \$template,
-#           "substr=s"   => \$template_substr,
-           "header!"    => \$header,
-           "column=i"   => \$column,
-           "help|h"     => \$help)
+	   "header!"    => \$header,
+	   "column=i"   => \$column,
+	   "help|h"     => \$help)
     or print_usage();
 
 if ($help) {
@@ -188,21 +187,21 @@ sub do_input_file {
     my ($line, $outfn, $outhandle);
 
     if ($header) {
-        $headerline = <$h>;
+	$headerline = <$h>;
     }
 
     compute_current_template();
 
     while (<$h>) {
-        # Save a copy of the text and then chomp $_. We don't want the
-        # terminating newline to show up in $x if we are splitting
-        # based on the last column.
-        $line = $_;
-        chomp;
+	# Save a copy of the text and then chomp $_. We don't want the
+	# terminating newline to show up in $x if we are splitting
+	# based on the last column.
+	$line = $_;
+	chomp;
 	$current_fields = [split /\Q$delim\E/o];
-        $outfn = compute_outfn();
-        $outhandle = get_output_handle($outfn);
-        print $outhandle $line;
+	$outfn = compute_outfn();
+	$outhandle = get_output_handle($outfn);
+	print $outhandle $line;
     }
     close($h);
 }
@@ -279,15 +278,15 @@ sub get_output_handle {
     my $fn = shift;
     my $href = exists $outfiles{$fn} ? $outfiles{$fn} : undef;
     if (defined $href && defined $href->{handle}) {
-        list_move_to_front($href);
-        return $href->{handle}
+	list_move_to_front($href);
+	return $href->{handle}
     }
     if (defined $href) {
-        $href->{handle} = open_append($fn);
+	$href->{handle} = open_append($fn);
     }
     else {
-        $href = {prev => undef, next => undef, handle => open_write($fn)};
-        $outfiles{$fn} = $href;
+	$href = {prev => undef, next => undef, handle => open_write($fn)};
+	$outfiles{$fn} = $href;
     }
     list_insert_head($href);
     $wopen_count++;
@@ -314,22 +313,22 @@ sub open_common {
     my ($h, $r);
     close_lru_file() while ($wopen_count >= $wopen_max);
     while (!($r = open($h, $mode, $fn)) && ($! == EMFILE || $! == ENFILE)) {
-        last if $wopen_count == 0;
-        close_lru_files($! == EMFILE ? $wopen_count - 1 : int($wopen_count/2));
+	last if $wopen_count == 0;
+	close_lru_files($! == EMFILE ? $wopen_count - 1 : int($wopen_count/2));
     }
     if (!$r) {
-        die "unable to open ${fn} for ${verb}: $!";
+	die "unable to open ${fn} for ${verb}: $!";
     }
     return $h;
 }
 
 sub close_lru_file {
     if ($wopen_count <= 0) {
-        die "BUG! ", (caller(0))[3], "() should not be called when wopen_count == $wopen_count";
+	die "BUG! ", (caller(0))[3], "() should not be called when wopen_count == $wopen_count";
     }
     my $href = list_remove_last();
     if (!defined $href) {
-        die "BUG! ", (caller(0))[3], "() called while no files appear to be open for writing";
+	die "BUG! ", (caller(0))[3], "() called while no files appear to be open for writing";
     }
     close($href->{handle}) or die "closing file handle failed: $!";
     $href->{handle} = undef;
