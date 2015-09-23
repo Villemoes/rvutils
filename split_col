@@ -54,9 +54,9 @@ Options:
   --header        Treat the first line of each input file as a header line.
                   That line will be copied verbatim to each output file.
   --template str  Use str as the template for output files names. str
-                  should contain the substring {} precisely once -
-                  this will be replaced by the contents of the
-                  column.
+                  should contain at least one replacement string (see
+                  below) - this will be replaced by the contents of
+                  the appropriate column.
 
 If --template is not given, the output from an input file foo.bar.ext
 will use the template foo.bar_{}.ext. If the input filename contains
@@ -106,6 +106,19 @@ Apart from {}, there are a few other replacement strings available:
 
      {.}{..} is always equal to the current input file name.
 
+{n}  Column number n. One can split based on multiple columns by simply
+     using multiple occurrences of these (and then the --column option
+     is redundant). For example
+
+         split_col --template 'foo{}bar' --column 4
+
+     is equivalent to
+
+         split_col --template 'foo{4}bar'
+
+     {} is simply a synonym for {c}, where c is the value of the
+     --column option (and which defaults to 1).
+
 The default template described above is actually {.}_{}{..}
 
 HELP
@@ -126,16 +139,11 @@ err_exit("column index must be positive") if ($column <= 0);
 # $column is given 1-based, but we use 0-based indexing internally
 $column--;
 
-if (defined $template) {
-    if ($template =~ m/\Q$template_substr\E/) {
-	$current_template = $template;
-    } else {
-	err_exit("the substring %s must occur precisely once in the template",
-		 $template_substr);
-    }
-} else {
-    $template = '{.}_{}{..}';
-}
+$template = '{.}_{}{..}' unless defined $template;
+
+err_exit("at least one replacement string ({} or {n}) must occur in the template")
+    if (!($template =~ m/\{(?:[1-9][0-9]*)?\}/));
+
 
 sub compute_current_template {
     my ($base, $ext);
@@ -164,9 +172,8 @@ sub get_replacement {
     my ($repstring) = @_;
     my $c;
 
-    $repstring eq ''
-	or die "bug: unrecognized replacement string '$repstring'";
-    $c = $column;
+    # Repstring is either undef (for {}) or a positive integer (for {n}, for some n).
+    $c = (defined $repstring) ? $repstring - 1 : $column;
 
     exists $current_fields->[$c]
 	or die "not enough columns on line $. of $current_infile";
@@ -176,7 +183,7 @@ sub get_replacement {
 
 sub compute_outfn {
     my $ret = $current_template;
-    $ret =~ s/\{()\}/get_replacement($1)/ge;
+    $ret =~ s/\{([1-9][0-9]*)?\}/get_replacement($1)/ge;
     return $ret;
 }
 
